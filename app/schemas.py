@@ -582,4 +582,106 @@ class CapacityOverviewStatistics(BaseModel):
     categories: List[CategoryCapacityStatistics]
 
 
+# ===================== 风险快照 =====================
+
+
+class SnapshotRiskItem(BaseModel):
+    category: str
+    severity: str
+    severity_label: str
+    ref_type: str
+    ref_id: Optional[int] = None
+    title: str
+    detail: Optional[str] = None
+
+
+class SnapshotMissingField(BaseModel):
+    scope: str
+    scope_ref_id: Optional[int] = None
+    scope_ref_name: Optional[str] = None
+    field: str
+    field_label: str
+
+
+class SnapshotSource(BaseModel):
+    entity: str
+    record_count: int
+    latest_source_time: Optional[datetime] = None
+    note: Optional[str] = None
+
+
+class SnapshotInvestmentSummary(BaseModel):
+    planned_investment_10k: float
+    agreed_investment_10k: Optional[float] = None
+    gap_amount_10k: Optional[float] = None
+    gap_rate_pct: Optional[float] = None
+
+
+class SnapshotCapacitySummary(BaseModel):
+    eligible: bool
+    promised_monthly_capacity_tonnes: Optional[float] = None
+    report_count: int
+    latest_report: Optional[dict] = None
+    utilization_rate_pct: Optional[float] = None
+    latest_local_procurement_10k: Optional[float] = None
+
+
+class SnapshotMeta(BaseModel):
+    project_id: int
+    project_name: str
+    project_code: Optional[str] = None
+    as_of_date: date
+    cutoff_at: datetime
+    generated_at: datetime
+    generated_by: dict
+    status_at_snapshot: ProjectStatus
+    status_basis: str
+    risk_count: int
+    missing_field_count: int
+
+
+class RiskSnapshotPayload(BaseModel):
+    snapshot_meta: SnapshotMeta
+    project: dict
+    investment: SnapshotInvestmentSummary
+    capacity: SnapshotCapacitySummary
+    approval: Optional[dict] = None
+    milestones: List[dict] = Field(default_factory=list)
+    intents: List[dict] = Field(default_factory=list)
+    follow_ups: List[dict] = Field(default_factory=list)
+    status_logs: List[dict] = Field(default_factory=list)
+    risk_items: List[SnapshotRiskItem] = Field(default_factory=list)
+    missing_fields: List[SnapshotMissingField] = Field(default_factory=list)
+    sources: List[SnapshotSource] = Field(default_factory=list)
+
+
+class RiskSnapshotListItem(BaseModel):
+    id: int
+    project_id: int
+    project_name: str
+    as_of_date: date
+    cutoff_at: datetime
+    status_at_snapshot: ProjectStatus
+    risk_count: int
+    missing_field_count: int
+    payload_hash: str
+    created_by_name: str
+    created_by_role: str
+    created_at: datetime
+    download_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SnapshotAccessLogItem(BaseModel):
+    id: int
+    snapshot_id: int
+    accessed_by_name: str
+    accessed_by_role: str
+    action: str
+    accessed_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 Project.model_rebuild()

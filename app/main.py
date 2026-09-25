@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, engine
-from .routers import entities, parks, projects, workflow, statistics, capacity
+from .routers import entities, parks, projects, workflow, statistics, capacity, risk_snapshots
 
 Base.metadata.create_all(bind=engine)
 
@@ -46,3 +46,4 @@ app.include_router(projects.router, prefix=prefix)
 app.include_router(workflow.router, prefix=prefix)
 app.include_router(statistics.router, prefix=prefix)
 app.include_router(capacity.router, prefix=prefix)
+app.include_router(risk_snapshots.router, prefix=prefix)

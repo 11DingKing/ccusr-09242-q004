@@ -8,6 +8,7 @@ from sqlalchemy import (
     Text,
     Date,
     Enum as SAEnum,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -362,3 +363,82 @@ class CapacityFollowUp(Base):
 
     project = relationship("Project", back_populates="capacity_follow_ups")
     report = relationship("MonthlyCapacityReport")
+
+
+class RiskSnapshot(Base):
+    """风险快照主表。
+
+    payload 为快照生成时刻的全量冻结数据（JSON 文本），与业务表不建立外键
+    关联、无级联，因此项目或其关联记录后续被修改/删除都不会影响已生成快照。
+    同一项目同一时间点只允许存在一份快照（幂等重复生成）。
+    """
+
+    __tablename__ = "risk_snapshots"
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id", "as_of_date", name="uq_risk_snapshot_project_date"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, nullable=False, index=True)
+    as_of_date = Column(Date, nullable=False, index=True)
+    cutoff_at = Column(DateTime, nullable=False)
+    status_at_snapshot = Column(SAEnum(ProjectStatus), nullable=False)
+    project_name = Column(String(256), nullable=False)
+    payload = Column(Text, nullable=False)
+    payload_hash = Column(String(64), nullable=False)
+    risk_count = Column(Integer, nullable=False, default=0)
+    missing_field_count = Column(Integer, nullable=False, default=0)
+    created_by_name = Column(String(64), nullable=False)
+    created_by_role = Column(String(16), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    download_count = Column(Integer, nullable=False, default=0)
+
+    items = relationship(
+        "RiskSnapshotItem",
+        back_populates="snapshot",
+        cascade="all, delete-orphan",
+    )
+    access_logs = relationship(
+        "RiskSnapshotAccessLog",
+        back_populates="snapshot",
+        cascade="all, delete-orphan",
+    )
+
+
+class RiskSnapshotItem(Base):
+    """风险项行式镜像，用于列表核查/筛选；权威内容以 RiskSnapshot.payload 为准。"""
+
+    __tablename__ = "risk_snapshot_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_id = Column(
+        Integer, ForeignKey("risk_snapshots.id"), nullable=False, index=True
+    )
+    sort_order = Column(Integer, nullable=False)
+    category = Column(String(32), nullable=False, index=True)
+    severity = Column(String(16), nullable=False, index=True)
+    ref_type = Column(String(32), nullable=False)
+    ref_id = Column(Integer)
+    title = Column(String(256), nullable=False)
+    detail = Column(Text)
+
+    snapshot = relationship("RiskSnapshot", back_populates="items")
+
+
+class RiskSnapshotAccessLog(Base):
+    """快照再次下载/查看的审计记录。"""
+
+    __tablename__ = "risk_snapshot_access_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_id = Column(
+        Integer, ForeignKey("risk_snapshots.id"), nullable=False, index=True
+    )
+    accessed_by_name = Column(String(64), nullable=False)
+    accessed_by_role = Column(String(16), nullable=False)
+    action = Column(String(16), nullable=False)
+    accessed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    snapshot = relationship("RiskSnapshot", back_populates="access_logs")
