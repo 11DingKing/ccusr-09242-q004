@@ -5,6 +5,7 @@ class HTTPStatus(IntEnum):
     OK = 200
     CREATED = 201
     BAD_REQUEST = 400
+    FORBIDDEN = 403
     NOT_FOUND = 404
     CONFLICT = 409
 
@@ -19,6 +20,7 @@ ERROR_NOT_FOUND = {
     "capacity_report": "产能登记不存在",
     "follow_up": "跟进事项不存在",
     "capacity_curve": "产能曲线数据不存在",
+    "risk_snapshot": "风险快照不存在",
 }
 
 ERROR_DUPLICATE = {
@@ -38,6 +40,17 @@ ERROR_STATUS = {
 ERROR_OPERATION_FAILED = {
     "approval": "立项失败",
     "capacity_report": "登记失败",
+}
+
+ERROR_FORBIDDEN = {
+    "role_missing": "未提供访问角色（X-User-Role），无权访问风险快照",
+    "role_unknown": "访问角色「{role}」未获授权，无权访问风险快照",
+    "snapshot:generate": "当前角色无权生成风险快照",
+    "snapshot:download": "当前角色无权下载风险快照",
+}
+
+ERROR_SNAPSHOT = {
+    "as_of_before_project_created": "快照基准时间 {as_of} 早于项目创建时间 {created_at}，无法还原该时点资料",
 }
 
 

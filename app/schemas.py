@@ -583,3 +583,123 @@ class CapacityOverviewStatistics(BaseModel):
 
 
 Project.model_rebuild()
+
+
+# ---- 项目风险快照 ----
+
+
+class RiskSnapshotGenerateRequest(BaseModel):
+    as_of: Optional[datetime] = Field(
+        None, description="快照基准时间点（ISO8601），缺省为当前时间"
+    )
+    operator: Optional[str] = Field(
+        None, description="生成人，缺省记录为调用角色"
+    )
+
+
+class SnapshotSourceRef(BaseModel):
+    """单份资料的来源与时间，用于解释快照生成时采用了哪一版数据。"""
+
+    table: str
+    record_id: int
+    field: str
+    source_time: Optional[datetime] = None
+
+
+class SnapshotProjectSection(BaseModel):
+    id: int
+    name: str
+    project_code: Optional[str] = None
+    status: ProjectStatus = Field(..., description="按基准时间点还原的项目状态")
+    park_id: int
+    park_name: Optional[str] = None
+    initiator_id: int
+    initiator_name: Optional[str] = None
+    responsible_department: Optional[str] = None
+    project_leader: Optional[str] = None
+
+
+class SnapshotInvestmentSection(BaseModel):
+    planned_investment_10k: Optional[float] = None
+    agreed_investment_10k: Optional[float] = None
+    sources: List[SnapshotSourceRef] = Field(default_factory=list)
+
+
+class SnapshotMilestoneItem(BaseModel):
+    id: int
+    sequence: int
+    name: str
+    milestone_type: MilestoneType
+    status: MilestoneStatus
+    planned_date: date
+    actual_date: Optional[date] = None
+    completion_rate: float
+    source_time: Optional[datetime] = None
+
+
+class SnapshotCapacityReportItem(BaseModel):
+    id: int
+    report_year: int
+    report_month: int
+    actual_output_tonnes: float
+    capacity_utilization_rate: Optional[float] = None
+    local_material_procurement_10k: Optional[float] = None
+    source_time: Optional[datetime] = None
+
+
+class SnapshotCapacitySection(BaseModel):
+    promised_monthly_capacity_tonnes: Optional[float] = None
+    promised_source: Optional[str] = None
+    utilization_rate: Optional[float] = None
+    latest_report: Optional[SnapshotCapacityReportItem] = None
+
+
+class SnapshotFollowUpItem(BaseModel):
+    id: int
+    title: str
+    status: FollowUpStatus
+    priority: FollowUpPriority
+    gap_percentage: Optional[float] = None
+    deadline: Optional[date] = None
+    source_time: Optional[datetime] = None
+
+
+class SnapshotRiskItem(BaseModel):
+    code: str
+    severity: str
+    message: str
+    count: int = 1
+
+
+class SnapshotSourceTimes(BaseModel):
+    project_updated_at: Optional[datetime] = None
+    approval_created_at: Optional[datetime] = None
+    milestones_latest_updated_at: Optional[datetime] = None
+    latest_capacity_report_created_at: Optional[datetime] = None
+    follow_ups_latest_updated_at: Optional[datetime] = None
+
+
+class RiskSnapshotReport(BaseModel):
+    project: SnapshotProjectSection
+    investment: SnapshotInvestmentSection
+    milestones: List[SnapshotMilestoneItem]
+    capacity: SnapshotCapacitySection
+    open_follow_ups: List[SnapshotFollowUpItem]
+    risk_items: List[SnapshotRiskItem]
+    missing_fields: List[str]
+    source_times: SnapshotSourceTimes
+
+
+class RiskSnapshotMeta(BaseModel):
+    id: int
+    project_id: int
+    as_of: datetime
+    generated_at: datetime
+    generated_by: Optional[str] = None
+    payload_hash: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RiskSnapshotDetail(RiskSnapshotMeta):
+    report: RiskSnapshotReport

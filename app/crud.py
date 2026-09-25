@@ -31,6 +31,14 @@ from .services.statistics import (
     get_capacity_overview_statistics as _svc_get_capacity_overview,
     get_project_capacity_curve_data as _svc_get_capacity_curve,
 )
+from .services.snapshots import (
+    normalize_as_of as _svc_normalize_as_of,
+    get_or_create_snapshot as _svc_get_or_create_snapshot,
+    list_snapshots as _svc_list_snapshots,
+    get_snapshot as _svc_get_snapshot,
+    snapshot_to_meta as _svc_snapshot_to_meta,
+    snapshot_to_detail as _svc_snapshot_to_detail,
+)
 
 
 def get_entity(db: Session, entity_id: int):
@@ -645,3 +653,34 @@ def get_project_capacity_curve(db: Session, project_id: int):
 
 def get_capacity_overview_statistics(db: Session):
     return _svc_get_capacity_overview(db)
+
+
+def normalize_snapshot_as_of(as_of: datetime) -> datetime:
+    return _svc_normalize_as_of(as_of)
+
+
+def get_or_create_risk_snapshot(
+    db: Session,
+    project: models.Project,
+    as_of: datetime,
+    generated_by: Optional[str] = None,
+):
+    return _svc_get_or_create_snapshot(
+        db, project, as_of, generated_by=generated_by
+    )
+
+
+def list_risk_snapshots(db: Session, project_id: int):
+    return _svc_list_snapshots(db, project_id)
+
+
+def get_risk_snapshot(db: Session, project_id: int, snapshot_id: int):
+    return _svc_get_snapshot(db, project_id, snapshot_id)
+
+
+def risk_snapshot_to_meta(snapshot: models.ProjectRiskSnapshot):
+    return _svc_snapshot_to_meta(snapshot)
+
+
+def risk_snapshot_to_detail(snapshot: models.ProjectRiskSnapshot):
+    return _svc_snapshot_to_detail(snapshot)

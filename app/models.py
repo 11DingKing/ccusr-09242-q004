@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Text,
     Date,
+    UniqueConstraint,
     Enum as SAEnum,
 )
 from sqlalchemy.orm import relationship
@@ -362,3 +363,24 @@ class CapacityFollowUp(Base):
 
     project = relationship("Project", back_populates="capacity_follow_ups")
     report = relationship("MonthlyCapacityReport")
+
+
+class ProjectRiskSnapshot(Base):
+    """项目风险快照：按基准时间点冻结项目及关联记录，内容落库后不再变化。"""
+
+    __tablename__ = "project_risk_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
+    as_of = Column(DateTime, nullable=False)
+    generated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    generated_by = Column(String(64))
+    payload = Column(Text, nullable=False)
+    payload_hash = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project")
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "as_of", name="uq_risk_snapshot_project_as_of"),
+    )
